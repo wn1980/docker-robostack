@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y \
     git \
     curl \
     locales \
+    gnupg2 \
+    lsb-release \
     sudo && \
     apt-get autoremove -y && \
     apt-get clean && \
@@ -90,11 +92,6 @@ RUN conda config --env --add channels conda-forge &&\
 RUN conda install -y jupyter bqplot pyyaml ipywidgets ipycanvas
 
 # install nodejs
-RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y \
-    gnupg2 \
-    lsb-release
-
 RUN sh -c 'echo "deb https://deb.nodesource.com/node_16.x `lsb_release -cs` main" > /etc/apt/sources.list.d/nodesource.list' && \
     curl -sSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
 

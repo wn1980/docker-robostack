@@ -12,7 +12,7 @@ volumes:
 services:
 
   robostack:
-    #build: ./
+    build: ./
     image: wn1980/robostack-humble${TAG}
     container_name: robostack_humble
     init: true
