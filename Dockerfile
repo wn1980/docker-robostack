@@ -1,4 +1,5 @@
-FROM ubuntu
+#FROM ubuntu
+FROM ros:humble-ros-base-jammy
 
 LABEL maintainer="Waipot Ngamsaad <waipotn@hotmail.com>"
 
@@ -29,14 +30,14 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en  
 ENV LC_ALL en_US.UTF-8     
 
-# install Miniconda3
-RUN curl -o ~/miniconda.sh -O $MINICONDA_SH && \
-     chmod +x ~/miniconda.sh && \
-     ~/miniconda.sh -b -p /opt/conda && \
-     rm ~/miniconda.sh 
+# install nodejs
+RUN sh -c 'echo "deb https://deb.nodesource.com/node_16.x `lsb_release -cs` main" > /etc/apt/sources.list.d/nodesource.list' && \
+    curl -sSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
 
-# set environment path
-ENV PATH /opt/conda/bin:$PATH
+RUN apt-get update && apt-get upgrade -y
+RUN apt-get install -y \
+    nodejs \
+	&& rm -rf /var/lib/apt/lists/*
 
 # setup user
 RUN useradd -m developer && \
@@ -47,7 +48,20 @@ RUN useradd -m developer && \
     echo developer ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/developer && \
     chmod 0440 /etc/sudoers.d/developer
 
-#USER developer
+USER developer
+
+# install Miniconda3
+RUN curl -o ~/miniconda.sh -O $MINICONDA_SH && \
+     chmod +x ~/miniconda.sh && \
+     ~/miniconda.sh -b -p /home/developer/conda && \
+     rm ~/miniconda.sh 
+
+# set environment path
+ENV PATH /home/developer/conda/bin:$PATH
+
+RUN conda config --env --add channels conda-forge &&\
+    conda config --env --add channels robostack &&\
+    conda config --env --add channels robostack-experimental
 
 # if you don't have mamba yet, install it first:
 RUN conda install -y mamba -c conda-forge
@@ -62,7 +76,7 @@ RUN mamba create -y -n ros_humble python=3.9 jupyterlab jupyter-packaging bqplot
 # https://medium.com/@chadlagore/conda-environments-with-docker-82cdc9d25754
 # https://stackoverflow.com/questions/55123637/activate-conda-environment-in-docker
 RUN echo "source activate ros_humble" > ~/.bashrc
-ENV PATH /opt/conda/envs/ros_humble/bin:$PATH
+ENV PATH /home/developer/conda/envs/ros_humble/bin:$PATH
 
 # optionally, install some compiler packages if you want to e.g. build packages in a colcon_ws:
 RUN mamba install -y compilers cmake pkg-config make ninja colcon-common-extensions -c conda-forge
@@ -82,23 +96,17 @@ RUN mamba install -y compilers cmake pkg-config make ninja colcon-common-extensi
 
 # if you want to use rosdep, also do:
 RUN mamba install -y rosdep -c conda-forge
-RUN rosdep init  # note: do not use sudo!
+
+USER root
+
+RUN rm /etc/ros/rosdep/sources.list.d/20-default.list && \
+    rosdep init
+
+USER developer
+
 RUN rosdep update
 
-RUN conda config --env --add channels conda-forge &&\
-    conda config --env --add channels robostack &&\
-    conda config --env --add channels robostack-experimental
-
 RUN conda install -y jupyter bqplot pyyaml ipywidgets ipycanvas
-
-# install nodejs
-RUN sh -c 'echo "deb https://deb.nodesource.com/node_16.x `lsb_release -cs` main" > /etc/apt/sources.list.d/nodesource.list' && \
-    curl -sSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
-
-RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y \
-    nodejs \
-	&& rm -rf /var/lib/apt/lists/*
 
 RUN cd ~ && git clone https://github.com/RoboStack/jupyter-ros.git && cd jupyter-ros && git checkout v0.6.0a0
 RUN cd ~/jupyter-ros && pip install -e .
@@ -107,4 +115,4 @@ RUN conda install -c conda-forge jupyter_contrib_nbextensions
 #RUN conda run -n ros_humble jupyter nbextension install --py --symlink --sys-prefix jupyros &&\
 #    conda run -n ros_humble jupyter nbextension enable --py --sys-prefix jupyros
 
-CMD conda run -n ros_humble jupyter lab --no-browser --ip 0.0.0.0 --port=8888 --notebook-dir=$HOME --allow-root
+CMD conda run -n ros_humble jupyter lab --no-browser --ip 0.0.0.0 --port=8888 --notebook-dir=/home/developer --allow-root
