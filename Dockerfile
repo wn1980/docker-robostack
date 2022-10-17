@@ -103,4 +103,8 @@ RUN apt-get install -y \
 RUN cd ~ && git clone https://github.com/RoboStack/jupyter-ros.git && cd jupyter-ros && git checkout v0.6.0a0
 RUN cd ~/jupyter-ros && pip install -e .
 
+RUN conda install -c conda-forge jupyter_contrib_nbextensions
+#RUN conda run -n ros_humble jupyter nbextension install --py --symlink --sys-prefix jupyros &&\
+#    conda run -n ros_humble jupyter nbextension enable --py --sys-prefix jupyros
+
 CMD conda run -n ros_humble jupyter lab --no-browser --ip 0.0.0.0 --port=8888 --notebook-dir=$HOME --allow-root
