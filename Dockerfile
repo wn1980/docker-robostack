@@ -31,7 +31,7 @@ ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8     
 
 # install nodejs
-RUN sh -c 'echo "deb https://deb.nodesource.com/node_16.x `lsb_release -cs` main" > /etc/apt/sources.list.d/nodesource.list' && \
+RUN sh -c 'echo "deb https://deb.nodesource.com/node_14.x `lsb_release -cs` main" > /etc/apt/sources.list.d/nodesource.list' && \
     curl -sSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
 
 RUN apt-get update && apt-get upgrade -y
