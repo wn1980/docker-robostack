@@ -63,7 +63,9 @@ RUN git clone https://github.com/RoboStack/jupyter-ros.git && \
     cd ~/jupyter-ros && \
     #git checkout 0.6.1 && \
     pip install -e . && \
-    jupyter labextension develop . --overwrite 
+    jupyter labextension develop . --overwrite && \
+    pip install --upgrade ipympl && \
+    mamba install sidecar
 
 # enable bash completion
 RUN echo -e "\n################### Docker config. ###################" >> ~/.bashrc && \
