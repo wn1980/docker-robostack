@@ -18,8 +18,6 @@ services:
     init: true
     restart: unless-stopped
     privileged: true
-    restart: unless-stopped
-    privileged: true
     network_mode: host
     devices:
       - "/dev:/dev"

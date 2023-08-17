@@ -66,7 +66,7 @@ RUN conda config --env --add channels robostack && \
     conda config --env --add channels conda-forge
 
 # Install ros-humble into the environment (ROS2)
-RUN mamba install ros-humble-turtlesim
+RUN mamba install ros-humble-desktop
 
 # Add env in Dockerfile: 
 # https://medium.com/@chadlagore/conda-environments-with-docker-82cdc9d25754
@@ -94,7 +94,7 @@ RUN mamba install compilers cmake pkg-config make ninja colcon-common-extensions
 
 # if you want to use rosdep, also do:
 #RUN mamba install -y rosdep -c conda-forge
-RUN mamba install jupyterlab jupyter-packaging bqplot pyyaml ipywidgets ipycanvas jupyter-ros
+RUN mamba install jupyterlab jupyter-packaging bqplot pyyaml ipywidgets ipycanvas
 
 #RUN cd ~ && git clone https://github.com/RoboStack/jupyter-ros.git && cd jupyter-ros && git checkout v0.6.0a0
 #RUN cd ~/jupyter-ros && pip install -e .
