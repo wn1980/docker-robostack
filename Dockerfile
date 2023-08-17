@@ -1,16 +1,15 @@
-#FROM ubuntu
-FROM ros:humble-ros-base-jammy
+FROM ubuntu
+#FROM ubuntu:20.04
+#FROM ros:humble-ros-base-jammy
 
 LABEL maintainer="Waipot Ngamsaad <waipotn@hotmail.com>"
-
-ARG MINICONDA_SH=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install --reinstall ca-certificates -y
 
-RUN sed -i -e 's/http:\/\/archive/mirror:\/\/mirrors/' -e 's/http:\/\/security/mirror:\/\/mirrors/' -e 's/\/ubuntu\//\/mirrors.txt/' /etc/apt/sources.list
+#RUN sed -i -e 's/http:\/\/archive/mirror:\/\/mirrors/' -e 's/http:\/\/security/mirror:\/\/mirrors/' -e 's/\/ubuntu\//\/mirrors.txt/' /etc/apt/sources.list
 
 RUN apt-get update && apt-get install -y \
     git \
@@ -18,50 +17,35 @@ RUN apt-get update && apt-get install -y \
     locales \
     gnupg2 \
     lsb-release \
+    nano \
+    bash-completion \
     sudo && \
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Set the locale
-RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
-    locale-gen
-ENV LANG en_US.UTF-8  
-ENV LANGUAGE en_US:en  
-ENV LC_ALL en_US.UTF-8     
-
 # install nodejs
-RUN sh -c 'echo "deb https://deb.nodesource.com/node_14.x `lsb_release -cs` main" > /etc/apt/sources.list.d/nodesource.list' && \
-    curl -sSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
+#RUN sh -c 'echo "deb https://deb.nodesource.com/node_14.x `lsb_release -cs` main" > /etc/apt/sources.list.d/nodesource.list' && \
+#    curl -sSL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
 
-RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y \
-    nodejs \
-	&& rm -rf /var/lib/apt/lists/*
-
-# setup user
-RUN useradd -m developer && \
-    usermod -aG sudo developer && \
-    usermod --shell /bin/bash developer && \
-    #chown -R developer:developer /workspace && \
-    #ln -sfn /workspace /home/developer/workspace && \
-    echo developer ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/developer && \
-    chmod 0440 /etc/sudoers.d/developer
-
-USER developer
+#RUN apt-get update && apt-get upgrade -y
+#RUN apt-get install -y \
+#    nodejs \
+#	&& rm -rf /var/lib/apt/lists/*
 
 # install Miniconda3
-RUN curl -o ~/miniconda.sh -O $MINICONDA_SH && \
-     chmod +x ~/miniconda.sh && \
-     ~/miniconda.sh -b -p /home/developer/conda && \
-     rm ~/miniconda.sh 
+RUN curl -L -o ~/file.sh -O "https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-$(uname)-$(uname -m).sh" && \
+    #curl -L -o ~/file.sh -O https://repo.anaconda.com/miniconda/Miniconda3-latest-$(uname)-$(uname -m).sh && \
+    chmod +x ~/file.sh && \
+    ~/file.sh -b -p /opt/conda && \
+    rm ~/file.sh 
 
 # set environment path
-ENV PATH /home/developer/conda/bin:$PATH
+ENV PATH /opt/conda/bin:$PATH
 
-RUN conda config --env --add channels conda-forge &&\
-    conda config --env --add channels robostack &&\
-    conda config --env --add channels robostack-experimental
+ENV SHELL /bin/bash
+
+WORKDIR /root
 
 # if you don't have mamba yet, install it first:
 RUN conda install -y mamba -c conda-forge
@@ -70,16 +54,30 @@ RUN conda install -y mamba -c conda-forge
 #RUN mamba create -y -n ros_humble ros-humble-desktop python=3.9 -c robostack-humble -c conda-forge --no-channel-priority --override-channels
 #RUN conda activate ros_humble
 #RUN mamba install -y ros-humble-desktop python=3.9 -c robostack-humble -c conda-forge --no-channel-priority --override-channels
-RUN mamba create -y -n ros_humble python=3.9 jupyterlab jupyter-packaging bqplot pyyaml ipywidgets ipycanvas ros-humble-desktop-full -c conda-forge -c robostack -c robostack-humble -c robostack-experimental
+#RUN mamba create -y -n ros_humble python=3.9 jupyterlab jupyter-packaging bqplot pyyaml ipywidgets ipycanvas ros-humble-desktop-full -c conda-forge -c robostack -c robostack-humble -c robostack-experimental
+RUN mamba create -n ros_env python=3.9
+
+SHELL ["mamba", "run", "-n", "ros_env", "/bin/bash", "-c"]
+
+RUN conda config --env --add channels robostack && \
+    conda config --env --add channels robostack-humble && \
+    conda config --env --add channels robostack-experimental && \
+    conda config --env --add channels robostack-staging && \
+    conda config --env --add channels conda-forge
+
+# Install ros-humble into the environment (ROS2)
+RUN mamba install ros-humble-turtlesim
 
 # Add env in Dockerfile: 
 # https://medium.com/@chadlagore/conda-environments-with-docker-82cdc9d25754
 # https://stackoverflow.com/questions/55123637/activate-conda-environment-in-docker
-RUN echo "source activate ros_humble" > ~/.bashrc
-ENV PATH /home/developer/conda/envs/ros_humble/bin:$PATH
+#RUN echo "source activate ros_humble" > ~/.bashrc
+#ENV PATH /home/developer/conda/envs/ros_humble/bin:$PATH
 
 # optionally, install some compiler packages if you want to e.g. build packages in a colcon_ws:
-RUN mamba install -y compilers cmake pkg-config make ninja colcon-common-extensions -c conda-forge
+#RUN mamba install -y compilers cmake pkg-config make ninja colcon-common-extensions -c conda-forge
+RUN mamba install compilers cmake pkg-config make ninja colcon-common-extensions catkin_tools
+
 
 # on Windows, install Visual Studio 2017 or 2019 with C++ support 
 # see https://docs.microsoft.com/en-us/cpp/build/vscpp-step-0-installation?view=msvc-160
@@ -95,24 +93,25 @@ RUN mamba install -y compilers cmake pkg-config make ninja colcon-common-extensi
 #RUN conda activate ros_humble
 
 # if you want to use rosdep, also do:
-RUN mamba install -y rosdep -c conda-forge
+#RUN mamba install -y rosdep -c conda-forge
+RUN mamba install jupyterlab jupyter-packaging bqplot pyyaml ipywidgets ipycanvas jupyter-ros
 
-USER root
+#RUN cd ~ && git clone https://github.com/RoboStack/jupyter-ros.git && cd jupyter-ros && git checkout v0.6.0a0
+#RUN cd ~/jupyter-ros && pip install -e .
 
-RUN rm /etc/ros/rosdep/sources.list.d/20-default.list && \
-    rosdep init
-
-USER developer
-
-RUN rosdep update
-
-RUN conda install -y jupyter bqplot pyyaml ipywidgets ipycanvas
-
-RUN cd ~ && git clone https://github.com/RoboStack/jupyter-ros.git && cd jupyter-ros && git checkout v0.6.0a0
-RUN cd ~/jupyter-ros && pip install -e .
-
-RUN conda install -c conda-forge jupyter_contrib_nbextensions
+#RUN conda install -c conda-forge jupyter_contrib_nbextensions
 #RUN conda run -n ros_humble jupyter nbextension install --py --symlink --sys-prefix jupyros &&\
 #    conda run -n ros_humble jupyter nbextension enable --py --sys-prefix jupyros
 
-CMD conda run -n ros_humble jupyter lab --no-browser --ip 0.0.0.0 --port=8888 --notebook-dir=/home/developer --allow-root
+RUN git clone https://github.com/RoboStack/jupyter-ros.git && \
+    mv jupyter-ros/notebooks /root && \
+    rm -rf jupyter-ros
+
+# enable bash completion
+RUN echo -e "\n################### Docker config. ###################" >> ~/.bashrc && \
+    echo -e "source /usr/share/bash-completion/bash_completion" >> ~/.bashrc && \
+    # https://superuser.com/questions/555310/bash-save-history-without-exit
+    echo -e "export PROMPT_COMMAND='history -a'" >> ~/.bashrc && \
+    echo -e "source ~/.bashrc" >> ~/.bash_profile 
+
+CMD /opt/conda/bin/mamba run -n ros_env jupyter lab --no-browser --ip 0.0.0.0 --port=8866 --notebook-dir=/root --allow-root --NotebookApp.token='' --NotebookApp.password=''
