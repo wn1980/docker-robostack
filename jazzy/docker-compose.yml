@@ -12,10 +12,10 @@ volumes:
 services:
 
   robostack:
-    build:
-      context: ./
-      cache_from: 
-        - wn1980/robostack-jazzy${TAG}
+    # build:
+    #   context: ./
+    #   cache_from: 
+    #     - wn1980/robostack-jazzy${TAG}
     image: wn1980/robostack-jazzy${TAG}
     container_name: robostack_jazzy
     init: true
