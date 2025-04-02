@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# install Miniconda3
+# install conda
 RUN echo "Installing conda..." && \
     curl -L -o ~/file.sh -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh" && \
     # curl -L -o ~/file.sh -O https://repo.anaconda.com/miniconda/Miniconda3-latest-$(uname)-$(uname -m).sh && \
@@ -34,23 +34,30 @@ RUN echo "Installing conda..." && \
 # set environment path
 ENV PATH /opt/conda/bin:$PATH
 
-# Create a user
+# ======================== BEGIN: Create a user ========================
 ENV USERNAME "ubuntu"
 ENV USER ${USERNAME}
 ENV HOME /home/${USERNAME}
 ENV SHELL /bin/bash
+ENV PATH /home/${USERNAME}/.local/bin:$PATH
 
 # setup user space
-RUN mkdir -p /workspace
-
+RUN mkdir -p /workspace /opt/conda
 RUN echo "Creating user: ${USERNAME}" && \
     # useradd -m ${USERNAME} && \
     usermod -aG sudo ${USERNAME} && \
     usermod --shell /bin/bash ${USERNAME} && \
+    echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
+    chmod 0440 /etc/sudoers.d/${USERNAME} && \
     chown -R ${USERNAME}:${USERNAME} /workspace && \
     ln -sfn /workspace /home/${USERNAME}/workspace && \
-    echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
-    chmod 0440 /etc/sudoers.d/${USERNAME}
+    chown -R ${USERNAME}:${USERNAME} /opt/conda && \ 
+    ls -la /home/${USERNAME}
+
+# Enter to User mode
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}
+# ======================== END: Create a user ========================
 
 # if you don't have mamba yet, install it first:
 RUN conda install -y mamba -c conda-forge
@@ -70,8 +77,8 @@ RUN echo "Add conda channels..." && \
 
 # development installation (requires npm)
 RUN mamba install nodejs=14 jupyterlab=3 jupyter bqplot pyyaml ipywidgets ipycanvas -c conda-forge
-RUN git clone https://github.com/RoboStack/jupyter-ros.git ${HOME}/.jupyter-ros && \
-    cd ${HOME}/.jupyter-ros && \
+RUN git clone https://github.com/RoboStack/jupyter-ros.git /opt/conda/.jupyter-ros && \
+    cd /opt/conda/.jupyter-ros && \
     # git checkout 0.7.0 && \
     pip install -e . && \
     jupyter nbextension install --py --symlink --sys-prefix jupyros && \
@@ -88,10 +95,6 @@ RUN mamba install ros-jazzy-desktop
 
 # optionally, install some compiler packages if you want to e.g. build packages in a colcon_ws:
 RUN mamba install compilers cmake pkg-config make ninja colcon-common-extensions catkin_tools rosdep
-
-# Enter to User mode
-# USER ${USERNAME}
-# WORKDIR /home/${USERNAME}
 
 # switch to normal bash 
 SHELL ["/bin/bash", "-c"]
