@@ -1,5 +1,3 @@
-# FROM ubuntu
-# FROM ubuntu:20.04
 FROM ubuntu:noble
 
 LABEL maintainer="Waipot Ngamsaad <waipotn@hotmail.com>"
@@ -36,11 +34,23 @@ RUN echo "Installing conda..." && \
 # set environment path
 ENV PATH /opt/conda/bin:$PATH
 
+# Create a user
+ENV USERNAME "ubuntu"
+ENV USER ${USERNAME}
+ENV HOME /home/${USERNAME}
 ENV SHELL /bin/bash
 
-WORKDIR /root
+# setup user space
+RUN mkdir -p /workspace
 
-RUN conda init bash && conda config --set auto_activate_base false
+RUN echo "Creating user: ${USERNAME}" && \
+    # useradd -m ${USERNAME} && \
+    usermod -aG sudo ${USERNAME} && \
+    usermod --shell /bin/bash ${USERNAME} && \
+    chown -R ${USERNAME}:${USERNAME} /workspace && \
+    ln -sfn /workspace /home/${USERNAME}/workspace && \
+    echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
+    chmod 0440 /etc/sudoers.d/${USERNAME}
 
 # if you don't have mamba yet, install it first:
 RUN conda install -y mamba -c conda-forge
@@ -51,21 +61,18 @@ RUN mamba create -n ros_env python=3.11
 SHELL ["mamba", "run", "-n", "ros_env", "/bin/bash", "-c"]
 
 RUN echo "Add conda channels..." && \
-    # conda config --env --add channels robostack && \
-    # conda config --env --add channels robostack-experimental && \
-    # conda config --env --add channels robostack-staging && \
     conda config --env --add channels conda-forge && \
     # conda config --env --remove channels defaults && \
     conda config --env --add channels robostack-jazzy
 
-# install jupyter-ros (BEFORE installing any ros packages)
-# RUN mamba install jupyter jupyter-ros sqlite -c robostack
+# IMPORTANT!: install jupyter-ros (BEFORE installing any ros packages?)
+# RUN mamba install jupyter jupyter-ros sqlite -c robostack # (pre-built package does not work?)
 
 # development installation (requires npm)
 RUN mamba install nodejs=14 jupyterlab=3 jupyter bqplot pyyaml ipywidgets ipycanvas -c conda-forge
-RUN git clone https://github.com/RoboStack/jupyter-ros.git ~/.jupyter-ros && \
-    cd ~/.jupyter-ros && \
-    # git checkout 0.6.1 && \
+RUN git clone https://github.com/RoboStack/jupyter-ros.git ${HOME}/.jupyter-ros && \
+    cd ${HOME}/.jupyter-ros && \
+    # git checkout 0.7.0 && \
     pip install -e . && \
     jupyter nbextension install --py --symlink --sys-prefix jupyros && \
     jupyter nbextension enable --py --sys-prefix jupyros && \
@@ -73,7 +80,7 @@ RUN git clone https://github.com/RoboStack/jupyter-ros.git ~/.jupyter-ros && \
     jupyter labextension develop . --overwrite && \
     mamba install sidecar && \
     # pip install --upgrade ipympl && \
-    cp -rf ./notebooks ~/ && \
+    cp -rf ./notebooks /workspace && \
     echo "Done!"
 
 # Install ros-jazzy into the environment (ROS2)
@@ -81,6 +88,15 @@ RUN mamba install ros-jazzy-desktop
 
 # optionally, install some compiler packages if you want to e.g. build packages in a colcon_ws:
 RUN mamba install compilers cmake pkg-config make ninja colcon-common-extensions catkin_tools rosdep
+
+# Enter to User mode
+# USER ${USERNAME}
+# WORKDIR /home/${USERNAME}
+
+# switch to normal bash 
+SHELL ["/bin/bash", "-c"]
+
+RUN conda init bash && conda config --set auto_activate_base false
 
 # enable bash completion
 RUN echo -e "\n################### Docker config. ###################" >> ~/.bashrc && \
@@ -95,4 +111,4 @@ RUN sudo apt-get -y autoremove && \
     sudo apt-get clean && \
     sudo rm -rf /var/lib/apt/lists/*
 
-CMD /opt/conda/bin/mamba run -n ros_env jupyter lab --no-browser --ip 0.0.0.0 --port=8866 --notebook-dir=/root --allow-root --NotebookApp.token='' --NotebookApp.password=''
+CMD /opt/conda/bin/mamba run -n ros_env jupyter lab --no-browser --ip 0.0.0.0 --port=8866 --notebook-dir=/workspace --allow-root --NotebookApp.token='' --NotebookApp.password=''

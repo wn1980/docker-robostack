@@ -1,4 +1,4 @@
-version: '2.3'
+version: '3.8'
 
 # create default network
 networks:
@@ -39,5 +39,5 @@ services:
       - DISPLAY=:9
     ports:
       - "8866:8866"
-    #command: conda run --no-capture-output -n ros_humble jupyter lab --no-browser --ip 0.0.0.0 --port=8888 --allow-root
-    #command: jupyter lab --no-browser --ip 0.0.0.0 --port=8888 --allow-root
+    #command: conda run --no-capture-output -n ros_env jupyter lab --no-browser --ip 0.0.0.0 --port=8888 --allow-root
+ 
