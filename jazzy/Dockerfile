@@ -46,6 +46,8 @@ RUN mkdir -p /workspace /opt/conda
 RUN echo "Creating user: ${USERNAME}" && \
     # useradd -m ${USERNAME} && \
     usermod -aG sudo ${USERNAME} && \
+    usermod -aG dialout ${USERNAME} && \
+    usermod -aG video ${USERNAME} && \
     usermod --shell /bin/bash ${USERNAME} && \
     echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} && \
     chmod 0440 /etc/sudoers.d/${USERNAME} && \
@@ -73,7 +75,7 @@ RUN echo "Add conda channels..." && \
     conda config --env --add channels robostack-jazzy
 
 # IMPORTANT!: install jupyter-ros (BEFORE installing any ros packages?)
-# RUN mamba install jupyter jupyter-ros sqlite -c robostack # (pre-built package does not work?)
+# RUN mamba install jupyter-ros -c robostack # (pre-built package does not work?)
 
 # development installation (requires npm)
 RUN mamba install nodejs=14 jupyterlab=3 jupyter bqplot pyyaml ipywidgets ipycanvas -c conda-forge
@@ -91,10 +93,14 @@ RUN git clone https://github.com/RoboStack/jupyter-ros.git /opt/conda/.jupyter-r
     echo "Done!"
 
 # Install ros-jazzy into the environment (ROS2)
-RUN mamba install ros-jazzy-desktop
+RUN mamba install \
+    ros-jazzy-ros-core \
+    ros-jazzy-turtlesim
+    # ros-jazzy-ros-base 
+    # ros-jazzy-desktop
 
 # optionally, install some compiler packages if you want to e.g. build packages in a colcon_ws:
-RUN mamba install compilers cmake pkg-config make ninja colcon-common-extensions catkin_tools rosdep
+# RUN mamba install compilers cmake pkg-config make ninja colcon-common-extensions catkin_tools rosdep
 
 # switch to normal bash 
 SHELL ["/bin/bash", "-c"]

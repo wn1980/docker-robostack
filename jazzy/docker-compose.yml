@@ -1,10 +1,10 @@
 version: '3.8'
 
 # create default network
-networks:
-  default:
-    name: ros-network
-    external: true
+# networks:
+#   default:
+#     name: ros-network
+#     external: true
 
 volumes:
   workspace:
@@ -29,7 +29,6 @@ services:
       - "/run/systemd:/run/systemd"
       - "/etc/localtime:/etc/localtime:ro"
       - "workspace:/workspace"
-      #- "~/.gitconfig:/home/developer/.gitconfig"
     healthcheck:
       test: ["CMD-SHELL", "test -e /opt/conda/bin/conda"]
       interval: "1m"
