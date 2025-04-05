@@ -87,7 +87,7 @@ RUN git clone https://github.com/RoboStack/jupyter-ros.git /opt/conda/.jupyter-r
     jupyter nbextension enable --py --sys-prefix jupyros && \
     jupyter nbextension enable --py --sys-prefix widgetsnbextension && \
     jupyter labextension develop . --overwrite && \
-    mamba install sidecar && \
+    mamba install sidecar numpy matplotlib && \
     # pip install --upgrade ipympl && \
     cp -rf ./notebooks /workspace && \
     echo "Done!"
